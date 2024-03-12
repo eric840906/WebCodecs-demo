@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { toBlobURL, fetchFile } from '@ffmpeg/util'
 import { Input, Button, Flex, Box, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Select } from '@chakra-ui/react'
+import { PlayIcon, PauseIcon } from './assets/Icons'
 
 function App() {
   const [loaded, setLoaded] = useState(false)
@@ -77,6 +78,11 @@ function App() {
         <Button onClick={transcode}>Transcode avi to mp4</Button>
       </Flex>
       <Flex>{<video src={videoUrl}></video>}</Flex>
+      <Flex>
+        <Button>
+          <PauseIcon />
+        </Button>
+      </Flex>
     </Flex>
   ) : (
     <Button onClick={load}>Load ffmpeg-core</Button>
