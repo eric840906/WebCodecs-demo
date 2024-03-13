@@ -9,6 +9,7 @@ function App() {
   const [videoUrl, setVideoUrl] = useState('')
   const [videoFile, setVideoFile] = useState<File>()
   const [outputFormat, setOutputFormat] = useState('')
+  const [thumbnails, setThumbnails] = useState<string[]>([])
   const ffmpegRef = useRef<FFmpeg | null>(null)
   if (ffmpegRef.current === null) {
     ffmpegRef.current = new FFmpeg()
@@ -19,7 +20,7 @@ function App() {
     const baseURL = 'https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm'
     const ffmpeg = ffmpegRef.current
     ffmpeg?.on('log', ({ type, message }) => {
-      console.log(type)
+      console.log(message)
       if (messageRef.current) messageRef.current.innerHTML = message
     })
     // toBlobURL is used to bypass CORS issue, urls with the same
@@ -43,7 +44,9 @@ function App() {
     }
   }
   const videoUploadHandler = async (e) => {
+    const ffmpeg = ffmpegRef.current
     if (e.target.files && e.target.files.length > 0) {
+      // console.log(imageData)
       setVideoFile(e.target.files[0])
       console.log(e.target.files)
       const arrBuffer = await e.target.files[0].arrayBuffer()
@@ -51,6 +54,20 @@ function App() {
       const url = URL.createObjectURL(new Blob([data.buffer], { type: e.target.files[0].type }))
       console.log(url)
       setVideoUrl(url)
+
+      await ffmpeg?.createDir('/thumbnails')
+      await ffmpeg?.writeFile(`${e.target.files[0]?.name}`, await fetchFile(e.target.files[0]))
+      await ffmpeg?.exec(['-i', `${e.target.files[0]?.name}`, '-vf', 'scale=88:50, fps=1', 'thumbnails/output_%04d.jpg'])
+      const images = await ffmpeg?.listDir('/thumbnails')
+      const imagesDataArr = images?.filter((image) => image.name.includes('output'))
+      const imagesArr: string[] = []
+      imagesDataArr?.map(async (image) => {
+        const fileData = await ffmpeg?.readFile(`thumbnails/${image.name}`)
+        const data = new Uint8Array(fileData as ArrayBuffer)
+        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'image/jpg' }))
+        return url
+      })
+      setThumbnails(imagesArr)
     }
   }
 
@@ -83,6 +100,9 @@ function App() {
           <PauseIcon />
         </Button>
       </Flex>
+      {thumbnails?.map((thumbnail, i) => (
+        <img width={88} height={50} key={thumbnail} src={thumbnail} />
+      ))}
     </Flex>
   ) : (
     <Button onClick={load}>Load ffmpeg-core</Button>
