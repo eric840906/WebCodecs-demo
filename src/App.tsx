@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { toBlobURL, fetchFile } from '@ffmpeg/util'
 import { Input, Button, Flex, Box, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Select } from '@chakra-ui/react'
@@ -42,6 +42,9 @@ function App() {
       })
     }
   }
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.src = videoUrl
+  }, [videoUrl])
 
   return (
     <Flex flexDir={'column'} gap={5} p={2} w={'100dvw'} h={'100dvh'}>
@@ -51,7 +54,7 @@ function App() {
       </Flex>
       {videoUrl && (
         <Flex>
-          <video ref={videoRef} src={videoUrl}></video>
+          <video ref={videoRef}></video>
         </Flex>
       )}
     </Flex>
