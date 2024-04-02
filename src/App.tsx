@@ -1,60 +1,38 @@
 import { useState, useRef, useEffect } from 'react'
-import { FFmpeg } from '@ffmpeg/ffmpeg'
-import { toBlobURL, fetchFile } from '@ffmpeg/util'
+import MP4Box from 'mp4box'
 import { Input, Button, Flex, Box, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Select } from '@chakra-ui/react'
 import { PlayIcon, PauseIcon } from './assets/Icons'
 
 function App() {
   const [videoUrl, setVideoUrl] = useState('')
-  const [videoFile, setVideoFile] = useState<File>()
-  const decoderRef = useRef<VideoDecoder | null>(null)
-  const processVideo = (frame) => {
-    console.log(frame)
-  }
-  if (decoderRef.current === null) {
-    decoderRef.current = new VideoDecoder({
-      output: processVideo,
-      error: (error) => console.log(error),
-    })
-  }
-  const videoRef = useRef<HTMLVideoElement | null>(null)
-  const videoUploadHandler = async (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setVideoFile(e.target.files[0])
-      console.log(e.target.files)
-      decoderRef.current?.configure({
-        codec: 'vp8',
-        codedHeight: 360,
-        codedWidth: 640,
-      })
-      const arrBuffer = await e.target.files[0].arrayBuffer()
-      const data = new Uint8Array(arrBuffer)
-      const url = URL.createObjectURL(new Blob([data.buffer], { type: e.target.files[0].type }))
-      console.log(url)
-      setVideoUrl(url)
-      videoRef.current?.addEventListener('canplay', async () => {
-        await decoderRef.current?.configure({
-          codec: 'vp8',
-          codedHeight: 640,
-          codedWidth: 480,
-        })
-        videoRef.current?.play()
-      })
+  const videoDecoderRef = useRef<VideoDecoder | null>(null)
+  const videoEncoderRef = useRef<VideoEncoder | null>(null)
+  const audioDecoderRef = useRef<AudioDecoder | null>(null)
+  const audioEncoderRef = useRef<AudioEncoder | null>(null)
+  const mp4boxVideo = MP4Box.createFile()
+  const mp4boxAudio = MP4Box.createFile()
+  const getExtradata = () => {
+    // 生成VideoDecoder.configure需要的description信息
+    const entry = mp4boxVideo.moov.traks[0].mdia.minf.stbl.stsd.entries[0]
+
+    const box = entry.avcC ?? entry.hvcC ?? entry.vpcC
+    if (box != null) {
+      const stream = new DataStream(undefined, 0, DataStream.BIG_ENDIAN)
+      box.write(stream)
+      // slice()方法的作用是移除moov box的header信息
+      return new Uint8Array(stream.buffer.slice(8))
     }
   }
-  useEffect(() => {
-    if (videoRef.current) videoRef.current.src = videoUrl
-  }, [videoUrl])
 
   return (
     <Flex flexDir={'column'} gap={5} p={2} w={'100dvw'} h={'100dvh'}>
       <Flex flexDir={'column'} gap={2}>
-        <Input type='file' onChange={videoUploadHandler} />
+        <Input type='file' onChange={() => {}} />
         <Button>Transcode avi to mp4</Button>
       </Flex>
       {videoUrl && (
         <Flex>
-          <video ref={videoRef}></video>
+          <video muted src={videoUrl} onCanPlay={() => {}}></video>
         </Flex>
       )}
     </Flex>
