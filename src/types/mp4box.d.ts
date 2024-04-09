@@ -2,6 +2,14 @@
 
 declare module "mp4box"
 
+export type FrameInfo = {
+	img: ImageBitmap,
+	duration: number|null,
+	timestamp: number
+}
+export interface newArrayBuffer extends ArrayBuffer {
+	fileStart: number
+}
 export interface MP4MediaTrack {
 	id: number
 	created: Date
